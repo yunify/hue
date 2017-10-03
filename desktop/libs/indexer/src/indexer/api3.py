@@ -248,6 +248,9 @@ def _create_index(user, fs, client, source, destination, index_name):
         replication=destination['indexerReplicationFactor']
     )
 
+    if client.is_solr_six_or_more():
+      client.update_config(index_name, {'set-user-property': {'update.autoCreateFields': 'false'}})
+
   if source['inputFormat'] not in ('manual', 'table'):
     data = fs.read(source["path"], 0, MAX_UPLOAD_SIZE)
     client.index(name=index_name, data=data, **kwargs)
