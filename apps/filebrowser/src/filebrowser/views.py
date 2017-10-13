@@ -427,7 +427,11 @@ def listdir_paged(request, path):
     if hasattr(request, 'doas'):
       do_as = request.doas
 
-    home_dir_path = request.user.get_home_directory()
+    # home_dir_path = request.user.get_home_directory()
+    if isinstance(request.fs._get_fs(path), S3FileSystem):
+        home_dir_path = request.fs._get_fs(path).get_home_directory(request.user)
+    else:
+        home_dir_path = request.user.get_home_directory()
     breadcrumbs = parse_breadcrumbs(path)
 
     if do_as:

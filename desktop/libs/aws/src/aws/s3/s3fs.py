@@ -35,6 +35,9 @@ from aws.conf import get_default_region, get_locations
 from aws.s3 import normpath, s3file, translate_s3_error, S3A_ROOT
 from aws.s3.s3stat import S3Stat
 
+from qingstor.sdk.service.qingstor import QingStor
+from qingstor.sdk.config import Config
+import json
 
 DEFAULT_READ_SIZE = 1024 * 1024  # 1MB
 PERMISSION_ACTION_S3 = "s3_access"
@@ -78,10 +81,17 @@ class S3FileSystem(object):
     self._bucket_cache = None
     self._filebrowser_action = PERMISSION_ACTION_S3
 
+  def get_home_directory(self, username):
+    root_directory = "S3A://"
+    return root_directory
+
   def _init_bucket_cache(self):
     if self._bucket_cache is None:
       try:
         buckets = self._s3_connection.get_all_buckets()
+	config = Config(self._s3_connection.aws_access_key_id, self._s3_connection.aws_secret_access_key)
+	qingstor = QingStor(config)
+	buckets_json = json.loads(qingstor.list_buckets().content)
       except S3FileSystemException, e:
         raise e
       except S3ResponseError, e:
@@ -90,7 +100,10 @@ class S3FileSystem(object):
         raise S3FileSystemException(_('Failed to initialize bucket cache: %s') % e)
       self._bucket_cache = {}
       for bucket in buckets:
-        self._bucket_cache[bucket.name] = bucket
+        for bucket_json in buckets_json['buckets']:
+          if bucket.name == bucket_json['name'] and bucket_json['location'] == self._s3_connection.region:
+              bucket.connection.host="s3."+self._s3_connection.region+".qingstor.com"
+              self._bucket_cache[bucket.name] = bucket         
 
   def _get_bucket(self, name):
     self._init_bucket_cache()

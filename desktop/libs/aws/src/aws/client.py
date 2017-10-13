@@ -42,7 +42,7 @@ class Client(object):
     self._security_token = aws_security_token
     self._region = region.lower()
     self._timeout = timeout
-    self._host = host
+    self._host = 's3.qingstor.com'
     self._proxy_address = proxy_address
     self._proxy_port = proxy_port
     self._proxy_user = proxy_user
@@ -107,6 +107,7 @@ class Client(object):
         os.environ['S3_USE_SIGV4'] = 'True'
         kwargs.update({'host': self._host})
         connection = boto.s3.connection.S3Connection(**kwargs)
+	connection.region = self._region
       elif self._region:
         connection = boto.s3.connect_to_region(self._region,
                                              aws_access_key_id=self._access_key_id,
